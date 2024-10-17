@@ -1,0 +1,49 @@
+name: Build docker image
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code 😀
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 1.8 👀
+        uses: actions/setup-java@v4
+        with:
+          java-version: 1.8
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Cache local Maven repository 💕
+        uses: actions/cache@v4
+        with:
+          save-always: true
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven
+
+      - name: Build with Maven 🔧
+        run: mvn clean package -DskipTests=true -B --file pom.xml
+
+      - name: Get release version 🚀
+        run: |
+          echo "RELEASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+
+      - name: Login Aliyun Container Registry 🌈
+        uses: aliyun/acr-login@v1
+        with:
+          login-server: registry.cn-shenzhen.aliyuncs.com
+          region-id: cn-shenzhen
+          username: "${{ secrets.USERNAME }}"
+          password: "${{ secrets.PASSWORD }}"
+
+      - name: Build the Docker image 🔨
+        run: |
+          docker version
+          docker build . --file ./xxl-job-admin/Dockerfile --tag registry.cn-shenzhen.aliyuncs.com/lhrdc/xxl-job-admin:$RELEASE_VERSION
+          docker push registry.cn-shenzhen.aliyuncs.com/lhrdc/xxl-job-admin:$RELEASE_VERSION
