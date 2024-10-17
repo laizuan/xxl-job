@@ -44,6 +44,7 @@ jobs:
 
       - name: Build the Docker image 🔨
         run: |
+          cd ./xxl-job-admin
           docker version
-          docker build . --file ./xxl-job-admin/Dockerfile --tag registry.cn-shenzhen.aliyuncs.com/lhrdc/xxl-job-admin:$RELEASE_VERSION
+          docker build . --file ./Dockerfile --tag registry.cn-shenzhen.aliyuncs.com/lhrdc/xxl-job-admin:$RELEASE_VERSION
           docker push registry.cn-shenzhen.aliyuncs.com/lhrdc/xxl-job-admin:$RELEASE_VERSION
