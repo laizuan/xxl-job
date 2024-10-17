@@ -150,18 +150,4 @@
             </distributionManagement>
         </profile>
     </profiles>
-
-    <repositories>
-        <repository>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <id>leaderrun</id>
-            <name>leaderrun nexus repository</name>
-            <url>https://devops.leaderrun.com/nexus/repository/maven-releases/</url>
-        </repository>
-    </repositories>
 </project>
