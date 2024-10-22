@@ -1,4 +1,4 @@
-FROM openjdk:8-jre-slim
+FROM eclipse-temurin:21.0.2_13-jre-alpine
 MAINTAINER xuxueli
 
 ENV PARAMS=""
