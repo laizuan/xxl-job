@@ -9,14 +9,14 @@ import com.xxl.job.admin.dao.XxlJobInfoDao;
 import com.xxl.job.admin.dao.XxlJobRegistryDao;
 import com.xxl.job.core.biz.model.ReturnT;
 import com.xxl.job.core.enums.RegistryConfig;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 /**
@@ -95,6 +95,10 @@ public class JobGroupController {
 					return new ReturnT<String>(500, I18nUtil.getString("jobgroup_field_registryList_unvalid") );
 				}
 			}
+		}
+
+		if (xxlJobGroupDao.loadByAppName(xxlJobGroup.getAppname()) != null) {
+			return ReturnT.SUCCESS;
 		}
 
 		// process

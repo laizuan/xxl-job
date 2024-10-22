@@ -130,7 +130,7 @@ public class JobThread extends Thread{
 					XxlJobContext.setXxlJobContext(xxlJobContext);
 
 					// execute
-					XxlJobHelper.log("<br>----------- xxl-job job execute start -----------<br>----------- Param:" + xxlJobContext.getJobParam());
+					XxlJobHelper.log("\n-----------  job execute start -----------\n----------- Param:" + xxlJobContext.getJobParam());
 
 					if (triggerParam.getExecutorTimeout() > 0) {
 						// limit timeout
@@ -153,7 +153,7 @@ public class JobThread extends Thread{
 							Boolean tempResult = futureTask.get(triggerParam.getExecutorTimeout(), TimeUnit.SECONDS);
 						} catch (TimeoutException e) {
 
-							XxlJobHelper.log("<br>----------- xxl-job job execute timeout");
+							XxlJobHelper.log("\n job execute timeout");
 							XxlJobHelper.log(e);
 
 							// handle result
@@ -176,7 +176,7 @@ public class JobThread extends Thread{
 								:tempHandleMsg;
 						XxlJobContext.getXxlJobContext().setHandleMsg(tempHandleMsg);
 					}
-					XxlJobHelper.log("<br>----------- xxl-job job execute end(finish) -----------<br>----------- Result: handleCode="
+					XxlJobHelper.log("\n ----------- job execute end(finish) -----------\n----------- Result: handleCode="
 							+ XxlJobContext.getXxlJobContext().getHandleCode()
 							+ ", handleMsg = "
 							+ XxlJobContext.getXxlJobContext().getHandleMsg()
@@ -191,7 +191,7 @@ public class JobThread extends Thread{
 				}
 			} catch (Throwable e) {
 				if (toStop) {
-					XxlJobHelper.log("<br>----------- JobThread toStop, stopReason:" + stopReason);
+					XxlJobHelper.log("\n----------- JobThread toStop, stopReason:" + stopReason);
 				}
 
 				// handle result
@@ -201,7 +201,7 @@ public class JobThread extends Thread{
 
 				XxlJobHelper.handleFail(errorMsg);
 
-				XxlJobHelper.log("<br>----------- JobThread Exception:" + errorMsg + "<br>----------- xxl-job job execute end(error) -----------");
+				XxlJobHelper.log("\n----------- JobThread Exception:" + errorMsg + "\n----------- job execute end(error) -----------");
 			} finally {
                 if(triggerParam != null) {
                     // callback handler info
@@ -247,6 +247,6 @@ public class JobThread extends Thread{
 			logger.error(e.getMessage(), e);
 		}
 
-		logger.info(">>>>>>>>>>> xxl-job JobThread stoped, hashCode:{}", Thread.currentThread());
+		logger.info(">>>>>>>>>>> JobThread stoped, hashCode:{}", Thread.currentThread());
 	}
 }

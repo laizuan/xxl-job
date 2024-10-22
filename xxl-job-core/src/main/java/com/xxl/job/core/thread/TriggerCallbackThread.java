@@ -167,14 +167,14 @@ public class TriggerCallbackThread {
             try {
                 ReturnT<String> callbackResult = adminBiz.callback(callbackParamList);
                 if (callbackResult!=null && ReturnT.SUCCESS_CODE == callbackResult.getCode()) {
-                    callbackLog(callbackParamList, "<br>----------- xxl-job job callback finish.");
+                    callbackLog(callbackParamList, "\n----------- job callback finish.");
                     callbackRet = true;
                     break;
                 } else {
-                    callbackLog(callbackParamList, "<br>----------- xxl-job job callback fail, callbackResult:" + callbackResult);
+                    callbackLog(callbackParamList, "\n----------- xxl-job job callback fail, callbackResult:" + callbackResult);
                 }
             } catch (Exception e) {
-                callbackLog(callbackParamList, "<br>----------- xxl-job job callback error, errorMsg:" + e.getMessage());
+                callbackLog(callbackParamList, "\n----------- xxl-job job callback error, errorMsg:" + e.getMessage());
             }
         }
         if (!callbackRet) {

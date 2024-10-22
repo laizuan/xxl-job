@@ -32,7 +32,8 @@ public interface XxlJobInfoDao {
 	public int save(XxlJobInfo info);
 
 	public XxlJobInfo loadById(@Param("id") int id);
-	
+	public XxlJobInfo loadByJobGroupAndExecutorHandler(@Param("jobGroup") int jobGroup,  @Param("executorHandler") String executorHandler);
+
 	public int update(XxlJobInfo xxlJobInfo);
 	
 	public int delete(@Param("id") long id);

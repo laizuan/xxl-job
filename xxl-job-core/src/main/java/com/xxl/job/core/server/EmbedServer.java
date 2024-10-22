@@ -79,7 +79,7 @@ public class EmbedServer {
                     // bind
                     ChannelFuture future = bootstrap.bind(port).sync();
 
-                    logger.info(">>>>>>>>>>> xxl-job remoting server start success, nettype = {}, port = {}", EmbedServer.class, port);
+                    logger.info("job remoting server start success, nettype = {}, port = {}", EmbedServer.class.getName(), port);
 
                     // start registry
                     startRegistry(appname, address);
@@ -88,9 +88,9 @@ public class EmbedServer {
                     future.channel().closeFuture().sync();
 
                 } catch (InterruptedException e) {
-                    logger.info(">>>>>>>>>>> xxl-job remoting server stop.");
+                    logger.info("job remoting server stop.");
                 } catch (Exception e) {
-                    logger.error(">>>>>>>>>>> xxl-job remoting server error.", e);
+                    logger.error("job remoting server error.", e);
                 } finally {
                     // stop
                     try {
@@ -114,7 +114,7 @@ public class EmbedServer {
 
         // stop registry
         stopRegistry();
-        logger.info(">>>>>>>>>>> xxl-job remoting server destroy success.");
+        logger.info("job remoting server destroy success.");
     }
 
 
@@ -227,7 +227,7 @@ public class EmbedServer {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            logger.error(">>>>>>>>>>> xxl-job provider netty_http server caught exception", cause);
+            logger.error("job provider netty_http server caught exception", cause);
             ctx.close();
         }
 
@@ -235,7 +235,7 @@ public class EmbedServer {
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
             if (evt instanceof IdleStateEvent) {
                 ctx.channel().close();      // beat 3N, close if idle
-                logger.debug(">>>>>>>>>>> xxl-job provider netty_http server close an idle channel.");
+                logger.debug("job provider netty_http server close an idle channel.");
             } else {
                 super.userEventTriggered(ctx, evt);
             }

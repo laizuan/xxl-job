@@ -16,6 +16,8 @@ import com.xxl.job.core.biz.model.ReturnT;
 import com.xxl.job.core.enums.ExecutorBlockStrategyEnum;
 import com.xxl.job.core.glue.GlueTypeEnum;
 import com.xxl.job.core.util.DateUtil;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -24,8 +26,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 /**
@@ -41,7 +41,7 @@ public class JobInfoController {
 	private XxlJobGroupDao xxlJobGroupDao;
 	@Resource
 	private XxlJobService xxlJobService;
-	
+
 	@RequestMapping
 	public String index(HttpServletRequest request, Model model, @RequestParam(required = false, defaultValue = "-1") int jobGroup) {
 
@@ -93,53 +93,60 @@ public class JobInfoController {
 			throw new RuntimeException(I18nUtil.getString("system_permission_limit") + "[username="+ loginUser.getUsername() +"]");
 		}
 	}
-	
+
 	@RequestMapping("/pageList")
 	@ResponseBody
-	public Map<String, Object> pageList(@RequestParam(required = false, defaultValue = "0") int start,  
+	public Map<String, Object> pageList(@RequestParam(required = false, defaultValue = "0") int start,
 			@RequestParam(required = false, defaultValue = "10") int length,
-			int jobGroup, int triggerStatus, String jobDesc, String executorHandler, String author) {
-		
-		return xxlJobService.pageList(start, length, jobGroup, triggerStatus, jobDesc, executorHandler, author);
+			int jobGroup, int triggerStatus, String jobDesc, String executorHandler, String author, String appname) {
+
+		return xxlJobService.pageList(start, length, jobGroup, triggerStatus, jobDesc, executorHandler, author, appname);
 	}
-	
+
+
+	@RequestMapping("/get")
+	@ResponseBody
+	public ReturnT<XxlJobInfo> get(int id) {
+		return xxlJobService.get(id);
+	}
+
 	@RequestMapping("/add")
 	@ResponseBody
 	public ReturnT<String> add(XxlJobInfo jobInfo) {
 		return xxlJobService.add(jobInfo);
 	}
-	
+
 	@RequestMapping("/update")
 	@ResponseBody
 	public ReturnT<String> update(XxlJobInfo jobInfo) {
 		return xxlJobService.update(jobInfo);
 	}
-	
+
 	@RequestMapping("/remove")
 	@ResponseBody
 	public ReturnT<String> remove(int id) {
 		return xxlJobService.remove(id);
 	}
-	
+
 	@RequestMapping("/stop")
 	@ResponseBody
-	public ReturnT<String> pause(int id) {
-		return xxlJobService.stop(id);
+	public ReturnT<String> pause(int id, String appname, String executorHandler) {
+		return xxlJobService.stop(id,  appname, executorHandler);
 	}
-	
+
 	@RequestMapping("/start")
 	@ResponseBody
-	public ReturnT<String> start(int id) {
-		return xxlJobService.start(id);
+	public ReturnT<String> start(int id,String appname,  String executorHandler) {
+		return xxlJobService.start(id,appname, executorHandler);
 	}
-	
+
 	@RequestMapping("/trigger")
 	@ResponseBody
-	public ReturnT<String> triggerJob(HttpServletRequest request, int id, String executorParam, String addressList) {
+	public ReturnT<String> triggerJob(HttpServletRequest request, int id, String executorParam, String addressList, String appname, String executorHandler) {
 		// login user
 		XxlJobUser loginUser = (XxlJobUser) request.getAttribute(LoginService.LOGIN_IDENTITY_KEY);
 		// trigger
-		return xxlJobService.trigger(loginUser, id, executorParam, addressList);
+		return xxlJobService.trigger(loginUser, id, executorParam, addressList, appname, executorHandler);
 	}
 
 	@RequestMapping("/nextTriggerTime")
@@ -168,5 +175,5 @@ public class JobInfoController {
 		return new ReturnT<List<String>>(result);
 
 	}
-	
+
 }

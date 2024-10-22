@@ -173,6 +173,14 @@
 		WHERE t.id = #{id}
 	</select>
 
+	<select id="loadByJobGroupAndExecutorHandler" resultType="com.xxl.job.admin.core.model.XxlJobInfo">
+		SELECT <include refid="Base_Column_List" />
+		FROM xxl_job_info AS t
+		WHERE t.job_group = #{jobGroup}
+		and t.executor_handler = #{executorHandler}
+	</select>
+
+
 	<update id="update" parameterType="com.xxl.job.admin.core.model.XxlJobInfo" >
 		UPDATE xxl_job_info
 		SET

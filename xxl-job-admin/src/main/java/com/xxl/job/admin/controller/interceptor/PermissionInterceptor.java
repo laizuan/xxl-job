@@ -1,19 +1,25 @@
 package com.xxl.job.admin.controller.interceptor;
 
 import com.xxl.job.admin.controller.annotation.PermissionLimit;
+import com.xxl.job.admin.core.conf.JobProperties;
 import com.xxl.job.admin.core.model.XxlJobUser;
 import com.xxl.job.admin.core.util.I18nUtil;
 import com.xxl.job.admin.dao.XxlJobUserDao;
 import com.xxl.job.admin.service.LoginService;
+import com.xxl.job.core.biz.model.ReturnT;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.AsyncHandlerInterceptor;
+import org.springframework.web.servlet.ModelAndView;
 
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 权限拦截
@@ -29,26 +35,28 @@ public class PermissionInterceptor implements AsyncHandlerInterceptor {
     @Resource
     private XxlJobUserDao xxlJobUserDao;
 
-    @Value("${xxl.job.security-key:}")
-    private String accessKey;
-
-    @Value("${xxl.job.access-user:}")
-    private String accessUser;
+    @Resource
+    private JobProperties properties;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
 
-        if (!(handler instanceof HandlerMethod)) {
+        if (!(handler instanceof HandlerMethod method)) {
             return true; // proceed with the next interceptor
         }
 
+        String reqAccessUser = request.getHeader("X-Access-User");
         String reqAccessKey = request.getHeader("X-Access-Key");
-        if (StringUtils.hasLength(reqAccessKey)) {
-            if (!reqAccessKey.equals(accessKey)) {
+        if (StringUtils.hasLength(reqAccessKey) && StringUtils.hasLength(reqAccessUser)) {
+            String key = properties.getApi().get(reqAccessUser);
+            if (!reqAccessKey.equals(key)) {
                 throw new RuntimeException(I18nUtil.getString("system_permission_limit"));
             } else {
-                XxlJobUser loginUser = xxlJobUserDao.loadByUserName(accessUser);
+                XxlJobUser loginUser = xxlJobUserDao.loadByUserName(reqAccessUser);
+                if (loginUser == null) {
+                    throw new RuntimeException(I18nUtil.getString("login_param_unvalid"));
+                }
                 request.setAttribute(LoginService.LOGIN_IDENTITY_KEY, loginUser);
                 return true;
             }
@@ -57,7 +65,6 @@ public class PermissionInterceptor implements AsyncHandlerInterceptor {
         // if need login
         boolean needLogin = true;
         boolean needAdminuser = false;
-        HandlerMethod method = (HandlerMethod) handler;
         PermissionLimit permission = method.getMethodAnnotation(PermissionLimit.class);
         if (permission != null) {
             needLogin = permission.limit();
@@ -78,5 +85,34 @@ public class PermissionInterceptor implements AsyncHandlerInterceptor {
         }
 
         return true; // proceed with the next interceptor
+    }
+
+    /**
+     * 升级springboot3 jdk 17
+     * spring6移除了对freemarker的jsp支持，
+     * 所以导致了内置的Request对象用不了，可以在PermissionInterceptor下添加以下代码
+     * <p> 来自issues:
+     * <a  href="https://github.com/xuxueli/xxl-job/issues/3338"> https://github.com/xuxueli/xxl-job/issues/3338</a>
+     * 感谢 <a  href="https://github.com/zuihou"> @zuihou </a>
+     * </p>
+     * @param request      请求
+     * @param response     响应
+     * @param handler      处理对象
+     * @param modelAndView 视图
+     * @throws Exception 异常
+     */
+    @Override
+    public void postHandle(
+            HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView)
+            throws Exception {
+        if (modelAndView != null) {
+            Enumeration<String> enumeration = request.getAttributeNames();
+            Map<String, Object> attributes = new HashMap<>();
+            while (enumeration.hasMoreElements()) {
+                String key = enumeration.nextElement();
+                attributes.put(key, request.getAttribute(key));
+            }
+            modelAndView.addObject("Request", attributes);
+        }
     }
 }

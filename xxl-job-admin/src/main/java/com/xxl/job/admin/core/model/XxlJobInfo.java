@@ -12,6 +12,7 @@ public class XxlJobInfo {
 	private int id;				// 主键ID
 	
 	private int jobGroup;		// 执行器主键ID
+	private String appname;    // 如果jobGroup爲空，通过appname获取到jobGroup
 	private String jobDesc;
 	
 	private Date addTime;
@@ -57,6 +58,14 @@ public class XxlJobInfo {
 
 	public void setJobGroup(int jobGroup) {
 		this.jobGroup = jobGroup;
+	}
+
+	public void setAppname(String appname) {
+		this.appname = appname;
+	}
+
+	public String getAppname() {
+		return appname;
 	}
 
 	public String getJobDesc() {

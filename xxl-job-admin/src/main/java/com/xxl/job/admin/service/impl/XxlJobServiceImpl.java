@@ -18,11 +18,12 @@ import com.xxl.job.core.biz.model.ReturnT;
 import com.xxl.job.core.enums.ExecutorBlockStrategyEnum;
 import com.xxl.job.core.glue.GlueTypeEnum;
 import com.xxl.job.core.util.DateUtil;
+import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
-import javax.annotation.Resource;
 import java.text.MessageFormat;
 import java.util.*;
 
@@ -46,12 +47,26 @@ public class XxlJobServiceImpl implements XxlJobService {
 	private XxlJobLogReportDao xxlJobLogReportDao;
 	
 	@Override
-	public Map<String, Object> pageList(int start, int length, int jobGroup, int triggerStatus, String jobDesc, String executorHandler, String author) {
-
+	public Map<String, Object> pageList(int start, int length, int jobGroup, int triggerStatus, String jobDesc, String executorHandler, String author, String appname) {
+		if (jobGroup <=0 && StringUtils.hasLength(appname)) {
+			XxlJobGroup xxlJobGroup = xxlJobGroupDao.loadByAppName(appname);
+			if (xxlJobGroup == null) {
+				Map<String, Object> maps = new HashMap<String, Object>();
+				maps.put("recordsTotal", 0);		// 总记录数
+				maps.put("recordsFiltered", 0);	// 过滤后的总记录数
+				maps.put("data",  List.of());  					// 分页列表
+				return maps;
+			}
+			jobGroup = xxlJobGroup.getId();
+		}
 		// page list
-		List<XxlJobInfo> list = xxlJobInfoDao.pageList(start, length, jobGroup, triggerStatus, jobDesc, executorHandler, author);
+		List<XxlJobInfo> list;
 		int list_count = xxlJobInfoDao.pageListCount(start, length, jobGroup, triggerStatus, jobDesc, executorHandler, author);
-		
+		if (list_count > 0) {
+			list = xxlJobInfoDao.pageList(start, length, jobGroup, triggerStatus, jobDesc, executorHandler, author);
+		} else {
+			list = Collections.emptyList();
+		}
 		// package result
 		Map<String, Object> maps = new HashMap<String, Object>();
 	    maps.put("recordsTotal", list_count);		// 总记录数
@@ -61,7 +76,20 @@ public class XxlJobServiceImpl implements XxlJobService {
 	}
 
 	@Override
+	public ReturnT<XxlJobInfo> get(int jobId) {
+		return new ReturnT<>(xxlJobInfoDao.loadById(jobId));
+	}
+
+	@Override
 	public ReturnT<String> add(XxlJobInfo jobInfo) {
+
+		// 没有JobGroupId的时候通过App name去获取到
+		if (jobInfo.getJobGroup() <= 0 && StringUtils.hasLength(jobInfo.getAppname())) {
+			XxlJobGroup xxlJobGroup = xxlJobGroupDao.loadByAppName(jobInfo.getAppname());
+			if (xxlJobGroup != null) {
+                jobInfo.setJobGroup(xxlJobGroup.getId());
+			}
+		}
 
 		// valid base
 		XxlJobGroup group = xxlJobGroupDao.load(jobInfo.getJobGroup());
@@ -161,7 +189,7 @@ public class XxlJobServiceImpl implements XxlJobService {
 
 	private boolean isNumeric(String str){
 		try {
-			int result = Integer.valueOf(str);
+			Integer.valueOf(str);
 			return true;
 		} catch (NumberFormatException e) {
 			return false;
@@ -304,8 +332,21 @@ public class XxlJobServiceImpl implements XxlJobService {
 	}
 
 	@Override
-	public ReturnT<String> start(int id) {
-		XxlJobInfo xxlJobInfo = xxlJobInfoDao.loadById(id);
+	public ReturnT<String> start(int id, String appname, String executorHandler) {
+		XxlJobInfo xxlJobInfo;
+		if (id <= 0 && StringUtils.hasLength(appname) && StringUtils.hasLength(executorHandler)) {
+			XxlJobGroup xxlJobGroup = xxlJobGroupDao.loadByAppName(appname);
+			if (xxlJobGroup == null) {
+				return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_jobgroup")+I18nUtil.getString("system_unvalid")) );
+			}
+			xxlJobInfo = xxlJobInfoDao.loadByJobGroupAndExecutorHandler(xxlJobGroup.getId(), executorHandler);
+		} else {
+			xxlJobInfo = xxlJobInfoDao.loadById(id);
+		}
+
+		if (xxlJobInfo == null) {
+			return new ReturnT<String>(ReturnT.FAIL.getCode(), I18nUtil.getString("jobinfo_glue_jobid_unvalid"));
+		}
 
 		// valid
 		ScheduleTypeEnum scheduleTypeEnum = ScheduleTypeEnum.match(xxlJobInfo.getScheduleType(), ScheduleTypeEnum.NONE);
@@ -336,8 +377,21 @@ public class XxlJobServiceImpl implements XxlJobService {
 	}
 
 	@Override
-	public ReturnT<String> stop(int id) {
-        XxlJobInfo xxlJobInfo = xxlJobInfoDao.loadById(id);
+	public ReturnT<String> stop(int id, String appname, String executorHandler) {
+		XxlJobInfo xxlJobInfo;
+		if (id <= 0 && StringUtils.hasLength(appname) && StringUtils.hasLength(executorHandler)) {
+			XxlJobGroup xxlJobGroup = xxlJobGroupDao.loadByAppName(appname);
+			if (xxlJobGroup == null) {
+				return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_jobgroup")+I18nUtil.getString("system_unvalid")) );
+			}
+			xxlJobInfo = xxlJobInfoDao.loadByJobGroupAndExecutorHandler(xxlJobGroup.getId(), executorHandler);
+		} else {
+			xxlJobInfo = xxlJobInfoDao.loadById(id);
+		}
+
+		if (xxlJobInfo == null) {
+			return new ReturnT<String>(ReturnT.FAIL.getCode(), I18nUtil.getString("jobinfo_glue_jobid_unvalid"));
+		}
 
 		xxlJobInfo.setTriggerStatus(0);
 		xxlJobInfo.setTriggerLastTime(0);
@@ -351,12 +405,22 @@ public class XxlJobServiceImpl implements XxlJobService {
 
 
 	@Override
-	public ReturnT<String> trigger(XxlJobUser loginUser, int jobId, String executorParam, String addressList) {
+	public ReturnT<String> trigger(XxlJobUser loginUser, int jobId, String executorParam, String addressList, String appname, String executorHandler) {
 		// permission
 		if (loginUser == null) {
 			return new ReturnT<String>(ReturnT.FAIL.getCode(), I18nUtil.getString("system_permission_limit"));
 		}
-		XxlJobInfo xxlJobInfo = xxlJobInfoDao.loadById(jobId);
+		XxlJobInfo xxlJobInfo;
+		if (jobId <= 0 && StringUtils.hasLength(appname) && StringUtils.hasLength(executorHandler)) {
+			XxlJobGroup xxlJobGroup = xxlJobGroupDao.loadByAppName(appname);
+			if (xxlJobGroup == null) {
+				return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_jobgroup")+I18nUtil.getString("system_unvalid")) );
+			}
+			xxlJobInfo = xxlJobInfoDao.loadByJobGroupAndExecutorHandler(xxlJobGroup.getId(), executorHandler);
+		} else {
+			xxlJobInfo = xxlJobInfoDao.loadById(jobId);
+		}
+
 		if (xxlJobInfo == null) {
 			return new ReturnT<String>(ReturnT.FAIL.getCode(), I18nUtil.getString("jobinfo_glue_jobid_unvalid"));
 		}

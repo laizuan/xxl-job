@@ -10,7 +10,7 @@ import java.util.Map;
 
 /**
  * core job action for xxl-job
- * 
+ *
  * @author xuxueli 2016-5-28 15:30:33
  */
 public interface XxlJobService {
@@ -26,7 +26,14 @@ public interface XxlJobService {
 	 * @param author
 	 * @return
 	 */
-	public Map<String, Object> pageList(int start, int length, int jobGroup, int triggerStatus, String jobDesc, String executorHandler, String author);
+	public Map<String, Object> pageList(int start, int length, int jobGroup, int triggerStatus, String jobDesc, String executorHandler, String author, String appname);
+
+	/**
+	 * get job
+	 * @param jobId
+	 * @return
+	 */
+	ReturnT<XxlJobInfo> get(int jobId);
 
 	/**
 	 * add job
@@ -58,7 +65,7 @@ public interface XxlJobService {
 	 * @param id
 	 * @return
 	 */
-	public ReturnT<String> start(int id);
+	public ReturnT<String> start(int id, String appname, String executorHandler);
 
 	/**
 	 * stop job
@@ -66,7 +73,7 @@ public interface XxlJobService {
 	 * @param id
 	 * @return
 	 */
-	public ReturnT<String> stop(int id);
+	public ReturnT<String> stop(int id, String appname, String executorHandler);
 
 	/**
 	 * trigger
@@ -77,7 +84,7 @@ public interface XxlJobService {
 	 * @param addressList
 	 * @return
 	 */
-	public ReturnT<String> trigger(XxlJobUser loginUser, int jobId, String executorParam, String addressList);
+	public ReturnT<String> trigger(XxlJobUser loginUser, int jobId, String executorParam, String addressList, String appname, String executorHandler);
 
 	/**
 	 * dashboard info
