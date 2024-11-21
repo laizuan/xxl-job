@@ -2,24 +2,21 @@ package com.xxl.job.admin.controller.interceptor;
 
 import com.xxl.job.admin.controller.annotation.PermissionLimit;
 import com.xxl.job.admin.core.conf.JobProperties;
+import com.xxl.job.admin.core.model.XxlJobGroup;
 import com.xxl.job.admin.core.model.XxlJobUser;
 import com.xxl.job.admin.core.util.I18nUtil;
+import com.xxl.job.admin.service.impl.LoginService;
 import com.xxl.job.admin.dao.XxlJobUserDao;
-import com.xxl.job.admin.service.LoginService;
-import com.xxl.job.core.biz.model.ReturnT;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.AsyncHandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 权限拦截
@@ -71,21 +68,77 @@ public class PermissionInterceptor implements AsyncHandlerInterceptor {
             needAdminuser = permission.adminuser();
         }
 
-        if (needLogin) {
-            XxlJobUser loginUser = loginService.ifLogin(request, response);
-            if (loginUser == null) {
-                response.setStatus(302);
-                response.setHeader("location", request.getContextPath() + "/toLogin");
-                return false;
-            }
-            if (needAdminuser && loginUser.getRole() != 1) {
-                throw new RuntimeException(I18nUtil.getString("system_permission_limit"));
-            }
-            request.setAttribute(LoginService.LOGIN_IDENTITY_KEY, loginUser);
-        }
+		if (needLogin) {
+			XxlJobUser loginUser = loginService.ifLogin(request, response);
+			if (loginUser == null) {
+				response.setStatus(302);
+				response.setHeader("location", request.getContextPath()+"/toLogin");
+				return false;
+			}
+			if (needAdminuser && loginUser.getRole()!=1) {
+				throw new RuntimeException(I18nUtil.getString("system_permission_limit"));
+			}
+			request.setAttribute(LoginService.LOGIN_IDENTITY_KEY, loginUser);	// set loginUser, with request
+		}
 
-        return true; // proceed with the next interceptor
-    }
+		return true;	// proceed with the next interceptor
+	}
+
+
+	// -------------------- permission tool --------------------
+
+	/**
+	 * get loginUser
+	 *
+	 * @param request
+	 * @return
+	 */
+	public static XxlJobUser getLoginUser(HttpServletRequest request){
+		XxlJobUser loginUser = (XxlJobUser) request.getAttribute(LoginService.LOGIN_IDENTITY_KEY);	// get loginUser, with request
+		return loginUser;
+	}
+
+	/**
+	 * valid permission by JobGroup
+	 *
+	 * @param request
+	 * @param jobGroup
+	 */
+	public static void validJobGroupPermission(HttpServletRequest request, int jobGroup) {
+		XxlJobUser loginUser = getLoginUser(request);
+		if (!loginUser.validPermission(jobGroup)) {
+			throw new RuntimeException(I18nUtil.getString("system_permission_limit") + "[username="+ loginUser.getUsername() +"]");
+		}
+	}
+
+	/**
+	 * filter XxlJobGroup by role
+	 *
+	 * @param request
+	 * @param jobGroupList_all
+	 * @return
+	 */
+	public static List<XxlJobGroup> filterJobGroupByRole(HttpServletRequest request, List<XxlJobGroup> jobGroupList_all){
+		List<XxlJobGroup> jobGroupList = new ArrayList<>();
+		if (jobGroupList_all!=null && jobGroupList_all.size()>0) {
+			XxlJobUser loginUser = PermissionInterceptor.getLoginUser(request);
+			if (loginUser.getRole() == 1) {
+				jobGroupList = jobGroupList_all;
+			} else {
+				List<String> groupIdStrs = new ArrayList<>();
+				if (loginUser.getPermission()!=null && loginUser.getPermission().trim().length()>0) {
+					groupIdStrs = Arrays.asList(loginUser.getPermission().trim().split(","));
+				}
+				for (XxlJobGroup groupItem:jobGroupList_all) {
+					if (groupIdStrs.contains(String.valueOf(groupItem.getId()))) {
+						jobGroupList.add(groupItem);
+					}
+				}
+			}
+		}
+		return jobGroupList;
+	}
+
 
     /**
      * 升级springboot3 jdk 17
